@@ -53,8 +53,10 @@ function createWindow () {
 		y: 0,
 		darkTheme: true,
 		webPreferences: {
-			contextIsolation: true,
-			nodeIntegration: false,
+			contextIsolation: false,
+			nodeIntegration: true,
+			enableBlinkFeatures: 'MediaCapture',
+			webSecurity: false,
 			zoomFactor: config.zoom
 		},
 		backgroundColor: "#000000"
@@ -216,6 +218,7 @@ app.on("certificate-error", (event, webContents, url, error, certificate, callba
 if (process.env.clientonly) {
 	app.whenReady().then(() => {
 		Log.log("Launching client viewer application.");
+		
 		createWindow();
 	});
 }

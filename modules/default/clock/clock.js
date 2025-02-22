@@ -299,5 +299,17 @@ Module.register("clock", {
 
 		// Return the wrapper to the dom.
 		return wrapper;
+	},
+
+	notificationReceived (notification, payload) {
+		if (notification === "SPEECH_USER") {
+			if (payload.text.includes("esconde")) {
+				this.hide();
+			}
+
+			if (payload.text.includes("mostra")) {
+				this.show();
+			}
+		}
 	}
 });
