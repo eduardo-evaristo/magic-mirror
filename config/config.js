@@ -27,7 +27,7 @@ let config = {
 			module: "MMM-speech-recognition",
 			position: 'lower_third', 
 			config: {
-				threshold: 0.6
+				threshold: 0.5
 			}
 		},
 		{
@@ -59,6 +59,13 @@ let config = {
 				lat: -20.1957,
 				lon: -40.2473,
 				showHumidity: false,
+			}
+		},
+		{
+			module: "alert",
+			config: {
+				position: "top_center",
+				display_time: 5000
 			}
 		}
     ]

@@ -314,7 +314,8 @@ Module.register("MMM-speech-recognition", {
 
       socketNotificationReceived(notification, payload) {
         if (notification === 'AUDIO_TRANSCRIBED') {
-            console.log(payload)
+            const text = payload.response
+            this.sendNotification("SHOW_ALERT", {type: "alert", title: 'transcrição', message: payload.response, timer: 5000});
         }
       }
 })
