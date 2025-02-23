@@ -1,5 +1,7 @@
+const { time } = require("systeminformation");
+
 let config = {
-    language: 'pt',
+    language: 'pt-br',
     modules: [
         {module: "clock", position: "fullscreen_above", config: {},},
         // {
@@ -28,6 +30,37 @@ let config = {
 				threshold: 0.6
 			}
 		},
+		{
+			module: 'weather',
+			position: 'top_right',
+			config: {
+				type: 'current',
+				weatherProvider: 'openmeteo',
+				apiBase: 'https://api.open-meteo.com/v1',
+				unis: 'metric',
+				showSun: false,
+				degreeLabel: true,
+				timeFormat: 24,
+				lat: -20.1286,
+				lon: -40.3080,
+				showHumidity: true,
+			}
+		},
+		{
+			module: 'weather',
+			position: 'top_right',
+			config: {
+				type: 'forecast',
+				weatherProvider: 'openmeteo',
+				apiBase: 'https://api.open-meteo.com/v1',
+				unis: 'metric',
+				degreeLabel: true,
+				timeFormat: 24,
+				lat: -20.1957,
+				lon: -40.2473,
+				showHumidity: false,
+			}
+		}
     ]
 }
 

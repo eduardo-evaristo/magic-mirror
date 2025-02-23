@@ -72,6 +72,15 @@ Module.register("weather", {
 	// Start the weather module.
 	start () {
 		moment.locale(this.config.lang);
+		navigator.geolocation.getCurrentPosition(
+			(position) => {
+				console.log(position);
+				this.config.lat = position.coords.latitude;
+				this.config.lon = position.coords.longitude;
+			}, (err) => {
+				console.log(err);
+			}
+		);
 
 		if (this.config.useKmh) {
 			Log.warn("Your are using the deprecated config values 'useKmh'. Please switch to windUnits!");
@@ -167,6 +176,7 @@ Module.register("weather", {
 
 		if (this.weatherProvider.currentWeather()) {
 			this.sendNotification("CURRENTWEATHER_TYPE", { type: this.weatherProvider.currentWeather().weatherType.replace("-", "_") });
+			console.log(this.weatherProvider.currentWeather());
 		}
 
 		const notificationPayload = {
