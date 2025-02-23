@@ -1,6 +1,7 @@
 "use strict";
 
 const electron = require("electron");
+const dotenv = require("dotenv");
 const core = require("./app");
 const Log = require("./logger");
 
@@ -228,6 +229,7 @@ if (process.env.clientonly) {
  * This starts all node helpers and starts the webserver.
  */
 if (["localhost", "127.0.0.1", "::1", "::ffff:127.0.0.1", undefined].includes(config.address)) {
+	dotenv.config();
 	core.start().then((c) => {
 		config = c;
 		app.whenReady().then(() => {
