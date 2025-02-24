@@ -219,6 +219,7 @@ Module.register("MMM-speech-recognition", {
     },
 
     async start() {
+        this.isProcessing = false
         this.audioChunks = []
         this.threshold = this.config.threshold
         this.context = new AudioContext()
@@ -248,8 +249,10 @@ Module.register("MMM-speech-recognition", {
         const maxVol = Math.max(...this.dataArray) / 255;
 
         if (maxVol > this.threshold && this.mediaRecorder.state === 'inactive') {
+            if (this.isProcessing) return console.log('An audio clip is being processed already')
             this.mediaRecorder.start()
-            console.log('recording')
+            this.isProcessing = true
+            console.log('Recording...')
     
         } else if (maxVol <= this.threshold && this.mediaRecorder.state === 'recording') {
             this.mediaRecorder.stop()
@@ -302,20 +305,48 @@ Module.register("MMM-speech-recognition", {
     // },
 
     sendAudio() {
-        if (this.audioChunks.length > 0) {
-          const blob = new Blob(this.audioChunks, {type: 'audio/wav'});
-          console.log(blob)
-          console.log(this.audioChunks);
-          this.sendSocketNotification("AUDIO_RECORDED", blob)
-          //this.ws.emit('micBinaryStream', blob); // Send audio blob to server
-          this.audioChunks = []; // Clear chunks after sending
+        // Guard for when the audio is empty, due to sensitivity issues
+        if (this.audioChunks.length === 0) {
+            //Set isProcessing to false to receive new audio clips
+            this.isProcessing = false
+
+            // Just in case
+            this.audioChunks = []
+            return console.log('The recording is empty, you may send a new one')
         }
+
+        // If audioChunks is not empty, we send the audio to node_helper
+        const blob = new Blob(this.audioChunks, {type: 'audio/wav'});
+        console.log("Sending AUDIO_RECORDED notification");
+        this.sendSocketNotification("AUDIO_RECORDED", blob)
+        
+        // Clear chunks after sending
+        this.audioChunks = []; 
       },
 
       socketNotificationReceived(notification, payload) {
         if (notification === 'AUDIO_TRANSCRIBED') {
             const text = payload.response
             this.sendNotification("SHOW_ALERT", {type: "alert", title: 'transcrição', message: payload.response, timer: 5000});
+
+            // A new audio may be recorded now
+            console.log('A new audio may be recorded, it was successful')
+
+            //Set isProcessing to false to receive new audio clips
+            this.isProcessing = false
+        }
+
+        if (notification === 'ERR_AUDIO_TRANSCRIBED') {
+            // A new audio may be recorded now
+            console.log('A new audio may be recorded, there was an error')
+
+            //Set isProcessing to false to receive new audio clips
+            this.isProcessing = false
+        }
+
+        if (notification === 'AI_ERR') {
+            // A new audio may be recorded now
+            this.isProcessing = false
         }
       }
 })
