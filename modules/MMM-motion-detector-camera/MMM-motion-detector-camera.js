@@ -75,11 +75,26 @@ Module.register("MMM-motion-detector-camera", {
         if (blob) {
           resolve(blob)
           // this.sendSocketNotification("SCREENSHOT_TAKEN", { blob })
+        } else {
+          reject(new Error("Could not take screenshot"))
         }
-        reject(new Error("Could not take screenshot"))
       }, "image/png")
     })
   },
+
+  async notificationReceived(notification, payload, sender) {
+    if (notification === "GET_SCREENSHOT_FOR_REGISTER") {
+      try {
+        const screenshot = await this.takeScreenshot()
+        console.log("foto tirada")
+        this.sendNotification("SCREENSHOT_RECEIVED", { screenshot: screenshot, name: payload.name })
+        console.log("Notificação enviada com sucesso!")
+      } catch (error) {
+        console.log(error)
+      }
+    }
+  },
+
   /**
    * Render the page we're on.
    */

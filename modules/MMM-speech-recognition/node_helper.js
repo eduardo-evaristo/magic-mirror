@@ -25,10 +25,10 @@ module.exports = NodeHelper.create({
     if (notification === "AUDIO_RECORDED") {
         //Needs to be comverted first to binary
         const buffer = Buffer.from(new Uint8Array(payload)); 
-        fs.writeFileSync(__dirname + "/audio.wav", buffer);
+        //fs.writeFileSync(__dirname + "/audio.wav", buffer);
 
         const { result, error } = await this.deepgram.listen.prerecorded.transcribeFile(
-            fs.readFileSync(this.pathToFile),
+            buffer,
             {punctuate: true, model: 'nova-2', language: 'pt-BR' },
           );
         
@@ -39,6 +39,14 @@ module.exports = NodeHelper.create({
           // If no transcription is found, return
           const text = result.results?.channels[0]?.alternatives[0]?.transcript;
           if (!text) return;
+
+          if (/(quero|gostaria).*\bregistr\w*/i.test(text)) {
+            const regex = /(?:meu\s*)?(?:nome\s*)(?:é\s*)?(\w+)/i;
+            const match = text.match(regex);
+            if (!match) return this.sendSocketNotification('REGISTER_NEW_USER', {error: true})
+              
+            this.sendSocketNotification('REGISTER_NEW_USER', {name: match[1]})
+          }
 
           // Else, send it to the backend
           const data = await this.sendToAi(text)

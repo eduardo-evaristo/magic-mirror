@@ -313,9 +313,32 @@ Module.register("MMM-speech-recognition", {
       },
 
       socketNotificationReceived(notification, payload) {
+        if (notification === 'REGISTER_NEW_USER') {
+            // Se o nome não for identificado
+            if (payload.error) return this.sendNotification("SHOW_ALERT", {type: "alert", title: 'registro', message: 'Não identificamos o seu nome, por favor, tente novamente.', timer: 3000});
+
+            // Se tudo ocorrer ok
+            this.sendNotification("SHOW_ALERT", {type: "alert", title: 'registro', message: 'Certifique-se de estar posicionado na câmera', timer: 3000});
+            this.sendNotification('GET_SCREENSHOT_FOR_REGISTER', {name: payload.name})
+        }
+
+        
         if (notification === 'AUDIO_TRANSCRIBED') {
             const text = payload.response
             this.sendNotification("SHOW_ALERT", {type: "alert", title: 'transcrição', message: payload.response, timer: 5000});
+        }
+      },
+
+      async notificationReceived(notification, payload) {
+        if (notification === 'SCREENSHOT_RECEIVED') {
+            console.log(payload?.screenshot)
+            console.log(payload.name)
+            const formData = new FormData()
+            formData.append('pic', payload.screenshot)
+            formData.append('name', payload.name)
+            const res = await fetch(process.env.API_BASE_URL + '/register', {method: 'POST', body: formData})
+            const data = await res.json()
+            console.log(data)
         }
       }
 })
