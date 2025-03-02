@@ -224,13 +224,14 @@ Module.register("MMM-speech-recognition", {
         this.context = new AudioContext()
         const audio = await this.getAudio()
         if (!audio) throw new Error('Couldnt get audio') 
+        this.audio = audio
         //Create stream source
         this.source = this.context.createMediaStreamSource(this.audio)
         //Attach/Create analyser to the context as well
         this.analyser = this.context.createAnalyser()
         //Connect our analyser (run by the context) to our source
         this.source.connect(this.analyser)
-        this.analyser.fftsize = 256;
+        this.analyser.fftSize = 256;
 
         //Create a media recorder with our stream (audio from mic)
         this.mediaRecorder = new MediaRecorder(this.audio)
