@@ -15,9 +15,9 @@ module.exports = NodeHelper.create({
         this.deepgram = createClient(deepgramApiKey);
     },
 
-    async sendToAi(transcribed_text) {
-      const { data } = await axios.post(process.env.API_BASE_URL + '/ai', {question: transcribed_text, neededData: {blabla: 'hello'}})
-      console.log(data)
+    //TODO: Fix the body
+    async sendToAi(transcribedText) {
+      const { data } = await axios.post(process.env.API_BASE_URL + '/ai', {question: transcribedText, neededData: {blabla: 'hello'}})
       return data
     },
 
@@ -40,20 +40,70 @@ module.exports = NodeHelper.create({
           const text = result.results?.channels[0]?.alternatives[0]?.transcript;
           if (!text) return;
 
-          if (/(quero|gostaria).*\bregistr\w*/i.test(text)) {
-            const regex = /(?:meu\s*)?(?:nome\s*)(?:é\s*)?(\w+)/i;
-            const match = text.match(regex);
-            if (!match) return this.sendSocketNotification('REGISTER_NEW_USER', {error: true})
-              
-            this.sendSocketNotification('REGISTER_NEW_USER', {name: match[1]})
+          // Upon receving transcription, send it to rasa, for intent extraction
+          const data = await this.getIntent(text)
+          
+          // If the user's intent is NOT internal, we just pipe that to the AI API already
+          if (data.intent === 'handle_to_ai') {
+            console.log('here')
+            // We get the AI's response by destructuring
+            const aiResponse = await this.sendToAi(data.text)
+
+            // Upon receving response, send it to the front end
+            return this.sendSocketNotification('AUDIO_TRANSCRIBED', aiResponse)
           }
 
-          // Else, send it to the backend
-          const data = await this.sendToAi(text)
+          // {
+          //   text: 'Gostaria que removesse o relógio da tela por favor?',
+          //   intent: { name: 'show_module', confidence: 0.9853608012199402 },
+          //   entities: [
+          //     {
+          //       entity: 'module',
+          //       start: 25,
+          //       end: 32,
+          //       confidence_entity: 0.9899289011955261,
+          //       value: 'relógio',
+          //       extractor: 'DIETClassifier',
+          //       processors: [Array]
+          //     }
+          //   ],
+          //   text_tokens: [
+          //     [ 0, 8 ],   [ 9, 12 ],
+          //     [ 13, 22 ], [ 23, 24 ],
+          //     [ 25, 32 ], [ 33, 35 ],
+          //     [ 36, 40 ], [ 41, 44 ],
+          //     [ 45, 50 ]
+          //   ],
+          //   intent_ranking: [
+          //     { name: 'show_module', confidence: 0.9853608012199402 },
+          //     { name: 'hide_module', confidence: 0.008354680612683296 },
+          //     { name: 'handle_to_ai', confidence: 0.006284565664827824 }
+          //   ],
+          //   response_selector: {
+          //     all_retrieval_intents: [],
+          //     default: { response: [Object], ranking: [] }
+          //   }
+          // } 
           
-          // Upon receving response, send it to the front end
-          this.sendSocketNotification('AUDIO_TRANSCRIBED', data)
+
+          // if (/(quero|gostaria).*\bregistr\w*/i.test(text)) {
+          //   const regex = /(?:meu\s*)?(?:nome\s*)(?:é\s*)?(\w+)/i;
+          //   const match = text.match(regex);
+          //   if (!match) return this.sendSocketNotification('REGISTER_NEW_USER', {error: true})
+              
+          //   this.sendSocketNotification('REGISTER_NEW_USER', {name: match[1]})
+          // }
+
+          
           
     }
   },
+  
+  async getIntent(textToGetIntentFrom) {
+    const {data: {intent, entities, text}} = await axios.post('http://localhost:5005/model/parse', {text: textToGetIntentFrom})
+
+    //TODO: Handel errors
+
+    return {intent: intent.name, entities: entities.length === 0 ? [] : entities[0].value, text}
+  }
 })

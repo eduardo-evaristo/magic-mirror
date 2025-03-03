@@ -51,11 +51,24 @@ Module.register("alert", {
 		}
 	},
 
-	notificationReceived (notification, payload, sender) {
+	async notificationReceived (notification, payload, sender) {
 		if (notification === "SHOW_ALERT") {
 			if (payload.type === "notification") {
 				this.showNotification(payload);
 			} else {
+				// Getting audio to be plaeyd along with alert
+				const res = await fetch("http://localhost:5006/voice", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ text: payload.message })
+				});
+
+				const blob = await res.blob();
+				const blobURL = URL.createObjectURL(blob);
+
+				const audio = new Audio(blobURL);
+				audio.play();
+
 				this.showAlert(payload, sender);
 			}
 		} else if (notification === "HIDE_ALERT") {
