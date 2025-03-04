@@ -42,15 +42,24 @@ module.exports = NodeHelper.create({
 
           // Upon receving transcription, send it to rasa, for intent extraction
           const data = await this.getIntent(text)
-          
+          const intent = data.intent
+
           // If the user's intent is NOT internal, we just pipe that to the AI API already
-          if (data.intent === 'handle_to_ai') {
+          if (intent === 'handle_to_ai') {
             console.log('here')
             // We get the AI's response by destructuring
             const aiResponse = await this.sendToAi(data.text)
 
             // Upon receving response, send it to the front end
             return this.sendSocketNotification('AUDIO_TRANSCRIBED', aiResponse)
+          }
+
+          if (intent.includes('module')) {
+            //Getting module's name
+            const entity = data.entities
+            
+            // Alerting the front end so can it forward the word to other modules
+            this.sendSocketNotification(intent, entity)
           }
 
           // {

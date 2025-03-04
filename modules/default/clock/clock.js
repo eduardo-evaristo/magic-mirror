@@ -302,14 +302,8 @@ Module.register("clock", {
 	},
 
 	notificationReceived (notification, payload) {
-		if (notification === "SPEECH_USER") {
-			if (payload.text.includes("esconde")) {
-				this.hide();
-			}
-
-			if (payload.text.includes("mostra")) {
-				this.show();
-			}
+		if (notification.includes("module") && payload === "relógio") {
+			this[notification.split("_")[0]]();
 		}
 	}
 });
