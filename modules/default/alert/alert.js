@@ -56,6 +56,7 @@ Module.register("alert", {
 			if (payload.type === "notification") {
 				this.showNotification(payload);
 			} else {
+				//TODO: Maybe refactor this later
 				// Getting audio to be plaeyd along with alert
 				const res = await fetch("http://localhost:5006/voice", {
 					method: "POST",
@@ -63,13 +64,90 @@ Module.register("alert", {
 					body: JSON.stringify({ text: payload.message })
 				});
 
-				const blob = await res.blob();
-				const blobURL = URL.createObjectURL(blob);
+				// Creating audio context with the right sample rate
+				const audioContext = new AudioContext({ sampleRate: 22050 });
+				await audioContext.resume();
 
-				const audio = new Audio(blobURL);
-				audio.play();
+				// Creatinfg reader to read the stream from the http response
+				const reader = res.body.getReader();
+				let audioBufferQueue = [];
+				this.isPlaying = false;
+				let leftover = new Uint8Array(0);
+				let nextStartTime = audioContext.currentTime;
 
-				this.showAlert(payload, sender);
+				// Await at least 500ms of audio to begin
+				let minBufferTime = 0.5;
+				let startPlayback = false;
+
+				const processStream = async () => {
+					while (true) {
+						const { done, value } = await reader.read();
+						if (done) break;
+
+						let chunk = new Uint8Array(leftover.length + value.length);
+						chunk.set(leftover, 0);
+						chunk.set(value, leftover.length);
+
+						let remainder = chunk.length % 2;
+						if (remainder !== 0) {
+							leftover = chunk.slice(-remainder);
+							chunk = chunk.slice(0, -remainder);
+						} else {
+							leftover = new Uint8Array(0);
+						}
+
+						const int16Array = new Int16Array(chunk.buffer);
+						const float32Array = new Float32Array(int16Array.length);
+						for (let i = 0; i < int16Array.length; i++) {
+							float32Array[i] = int16Array[i] / 32768.0;
+						}
+
+						const audioBuffer = audioContext.createBuffer(
+							1,
+							float32Array.length,
+							22050
+						);
+						audioBuffer.copyToChannel(float32Array, 0);
+
+						audioBufferQueue.push(audioBuffer);
+
+						// If we got at least 500ms in audio, we start playing it
+						const totalBufferedTime = audioBufferQueue.reduce(
+							(sum, buf) => sum + buf.duration,
+							0
+						);
+						if (!startPlayback && totalBufferedTime >= minBufferTime) {
+							startPlayback = true;
+							// Set function to arrow function
+							this.showAlert(payload, sender);
+							playNextBuffer();
+						}
+					}
+				};
+
+				function playNextBuffer () {
+					if (audioBufferQueue.length === 0) {
+						this.isPlaying = false;
+						return;
+					}
+
+					this.isPlaying = true;
+					const buffer = audioBufferQueue.shift();
+					const source = audioContext.createBufferSource();
+					source.buffer = buffer;
+					source.connect(audioContext.destination);
+
+					const now = audioContext.currentTime;
+					nextStartTime = Math.max(nextStartTime, now);
+					source.start(nextStartTime);
+					nextStartTime += buffer.duration;
+
+					source.onended = () => {
+						playNextBuffer();
+					};
+				}
+
+				await processStream();
 			}
 		} else if (notification === "HIDE_ALERT") {
 			this.hideAlert(sender);
