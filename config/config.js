@@ -25,7 +25,7 @@ let config = {
 		},
 		{
 			module: "MMM-speech-recognition",
-			position: 'lower_third', 
+			position: 'bottom_center', 
 			config: {
 				threshold: 0.5
 			}

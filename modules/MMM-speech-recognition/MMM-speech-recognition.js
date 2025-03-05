@@ -347,5 +347,15 @@ Module.register("MMM-speech-recognition", {
             const data = await res.json()
             console.log(data)
         }
+      },
+
+      getDom() {
+        const wrapper = document.createElement('div')
+        //wrapper.setAttribute('class', 'loader')
+        return wrapper
+      },
+
+      getStyles() {
+        return ['styles.css']
       }
 })
