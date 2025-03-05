@@ -248,7 +248,7 @@ Module.register("MMM-speech-recognition", {
         this.analyser.getByteFrequencyData(this.dataArray);
         const maxVol = Math.max(...this.dataArray) / 255;
 
-        if (maxVol > this.threshold && this.mediaRecorder.state === 'inactive') {
+        if (maxVol > this.threshold && this.mediaRecorder.state === 'inactive') {-
             this.mediaRecorder.start()
             console.log('recording')
     
@@ -323,6 +323,12 @@ Module.register("MMM-speech-recognition", {
             this.sendNotification('GET_SCREENSHOT_FOR_REGISTER', {name: payload.name})
         }
 
+        // To hide/show modules
+        // Each case should be treated individually in each module
+        if (notification.includes('module')) {
+            this.sendNotification(notification, payload)
+          }
+
         
         if (notification === 'AUDIO_TRANSCRIBED') {
             const text = payload.response
@@ -341,5 +347,15 @@ Module.register("MMM-speech-recognition", {
             const data = await res.json()
             console.log(data)
         }
+      },
+
+      getDom() {
+        const wrapper = document.createElement('div')
+        //wrapper.setAttribute('class', 'loader')
+        return wrapper
+      },
+
+      getStyles() {
+        return ['styles.css']
       }
 })

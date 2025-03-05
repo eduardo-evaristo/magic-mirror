@@ -129,6 +129,8 @@ Module.register("weather", {
 			this.updateDom(300);
 		} else if (notification === "CURRENT_WEATHER_OVERRIDE" && this.config.allowOverrideNotification) {
 			this.weatherProvider.notificationReceived(payload);
+		} else if (notification.includes("module") && payload === "previsão") {
+			this[notification.split("_")[0]]();
 		}
 	},
 
