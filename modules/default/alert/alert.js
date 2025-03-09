@@ -148,6 +148,8 @@ Module.register("alert", {
 				}
 
 				await processStream();
+				this.sendNotification("AUDIO_FINISHED");
+				console.log("alertou");
 			}
 		} else if (notification === "HIDE_ALERT") {
 			this.hideAlert(sender);

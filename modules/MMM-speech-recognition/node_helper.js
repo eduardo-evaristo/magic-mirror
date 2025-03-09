@@ -17,8 +17,13 @@ module.exports = NodeHelper.create({
 
     //TODO: Fix the body
     async sendToAi(transcribedText) {
-      const { data } = await axios.post(process.env.API_BASE_URL + '/ai', {question: transcribedText, neededData: {blabla: 'hello'}})
-      return data
+      try {
+        const { data } = await axios.post(process.env.API_BASE_URL + '/ai', {question: transcribedText, neededData: {blabla: 'hello'}})
+        return data  
+      } catch (err) {
+        console.log('Deu erro nessa porraaaaaaa')
+        return this.sendSocketNotification('NOTHING_IN_TRANSCRIPTION')
+      }
     },
 
   async socketNotificationReceived(notification, payload) {
@@ -32,13 +37,17 @@ module.exports = NodeHelper.create({
             {punctuate: true, model: 'nova-2', language: 'pt-BR' },
           );
         
-          if (error) throw error;
-          if (!error) console.dir(result, {depth: null});
-          fs.rm(this.pathToFile)
+          if (error) {
+            console.log('Deuerro nesse fela da gaita')
+            return this.sendSocketNotification('NOTHING_IN_TRANSCRIPTION')
+          }
+          // if (!error) console.dir(result, {depth: null});
+          // fs.rm(this.pathToFile)
           
           // If no transcription is found, return
           const text = result.results?.channels[0]?.alternatives[0]?.transcript;
-          if (!text) return;
+          console.log(text)
+          if (!text) return this.sendSocketNotification('NOTHING_IN_TRANSCRIPTION')
 
           // Upon receving transcription, send it to rasa, for intent extraction
           const data = await this.getIntent(text)
