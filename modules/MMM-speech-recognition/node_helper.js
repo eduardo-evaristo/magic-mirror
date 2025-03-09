@@ -16,11 +16,20 @@ module.exports = NodeHelper.create({
     },
 
     //TODO: Fix the body
-    async sendToAi(transcribedText) {
+    async sendToAi(payload) {
       try {
-        const { data } = await axios.post(process.env.API_BASE_URL + '/ai', {question: transcribedText, neededData: {blabla: 'hello'}})
+        console.log(payload.pic.size)
+        const formData = new FormData()
+        formData.append('pic', payload.pic)
+        formData.append('text', payload.text)
+        formData.append('weather', JSON.stringify(payload.weather))
+        console.log(formData)
+
+        const { data } = await axios.post(process.env.API_BASE_URL + '/ai', formData)
+        console.log(data)
         return data  
       } catch (err) {
+        console.log(err)
         console.log('Deu erro nessa porraaaaaaa')
         return this.sendSocketNotification('NOTHING_IN_TRANSCRIPTION')
       }
@@ -55,12 +64,16 @@ module.exports = NodeHelper.create({
 
           // If the user's intent is NOT internal, we just pipe that to the AI API already
           if (intent === 'handle_to_ai') {
-            console.log('here')
+            //Get all needed information before sending it to the API
+            const payload = {text: data.text}
+            this.sendSocketNotification('GET_WEATHER_DATA', payload)
+
+            console.log('being handled to AI')
             // We get the AI's response by destructuring
-            const aiResponse = await this.sendToAi(data.text)
+            //const aiResponse = await this.sendToAi(data.text)
 
             // Upon receving response, send it to the front end
-            return this.sendSocketNotification('AUDIO_TRANSCRIBED', aiResponse)
+            //return this.sendSocketNotification('AUDIO_TRANSCRIBED', aiResponse)
           }
 
           if (intent.includes('module')) {
@@ -113,7 +126,12 @@ module.exports = NodeHelper.create({
           // }
 
           
-          
+    // Deprecated? I guess      
+    } else if (notification === 'ALL_INFO_GATHERED') {
+      //const aiResponse = await this.sendToAi(payload)
+
+      // Upon receving response, send it to the front end
+      //return this.sendSocketNotification('AUDIO_TRANSCRIBED', aiResponse)
     }
   },
   

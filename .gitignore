@@ -88,3 +88,4 @@ js/positions.js
 
 # Personal
 *.env*
+**/model/*.*

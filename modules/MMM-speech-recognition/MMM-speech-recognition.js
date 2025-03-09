@@ -359,11 +359,17 @@ Module.register("MMM-speech-recognition", {
             this.updateDom()
         }
 
-        
-        if (notification === 'AUDIO_TRANSCRIBED') {
-            const text = payload.response
-            this.sendNotification("SHOW_ALERT", {type: "alert", title: 'transcrição', message: payload.response, timer: 5000});
+        //Moved to notificationReceived
+        // if (notification === 'AUDIO_TRANSCRIBED') {
+        //     const text = payload.response
+        //     this.sendNotification("SHOW_ALERT", {type: "alert", title: 'transcrição', message: payload.response, timer: 5000});
+        // }
+
+        if (notification === 'GET_WEATHER_DATA') {
+            // Passes it to the weather module to get the weather data
+            this.sendNotification('GET_WEATHER_DATAA', payload)
         }
+
       },
 
       async notificationReceived(notification, payload) {
@@ -382,7 +388,57 @@ Module.register("MMM-speech-recognition", {
             this.isProcessing = false
             console.log(this.isProcessing)
             this.updateDom()
+        } else if (notification === 'WEATHER_DATA_RECEIVED') {
+            console.log('Data from weather has been received')
+            console.log(JSON.stringify(payload))
+            this.sendNotification('GET_SCREENSHOT', payload)
+        } else if (notification === 'CURRENT_SCREENSHOT_TAKEN') {
+            console.log('final payload')
+            console.log(payload)
+
+            //Moved this logic into this module, not the node_helper part
+            //this.sendSocketNotification('ALL_INFO_GATHERED', payload)
+
+            //TODO: Refactor this into its own function later
+            try {
+                console.log('contacting AI')
+                console.log(payload.pic.size)
+                const formData = new FormData()
+                formData.append('pic', payload.pic)
+                formData.append('text', payload.text)
+                formData.append('weather', JSON.stringify(payload.weather))
+                console.log(formData)
+        
+                const response = await fetch(process.env.API_BASE_URL + '/ai', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                console.log(data)
+                // i dont think the module is receving notifs from itself, I'll create functions to get aroudn that
+                //return this.sendNotification('AUDIO_TRANSCRIBED', data) 
+                this.speech(data)
+              } catch (err) {
+                console.log(err)
+                
+                // i dont think the module is receving notifs from itself, i'll just write the instructions here for now
+                //return this.sendNotification('NOTHING_IN_TRANSCRIPTION')
+                console.log('Não tinha texto na transcrição')
+                this.isProcessing = false
+                this.updateDom()
+              }
+        } else if (notification === 'NOTHING_IN_TRANSCRIPTION') {
+            console.log('Não tinha texto na transcrição')
+            this.isProcessing = false
+            this.updateDom()
+        } else if (notification === 'AUDIO_TRANSCRIBED') {
+                const text = payload.response
+                this.sendNotification("SHOW_ALERT", {type: "alert", title: 'transcrição', message: payload.response, timer: 5000});
         }
+      },
+
+      speech(payload) {
+            this.sendNotification("SHOW_ALERT", {type: "alert", title: 'transcrição', message: payload.response, timer: 5000});
       },
 
       getDom() {
