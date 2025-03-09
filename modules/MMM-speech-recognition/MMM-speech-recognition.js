@@ -232,30 +232,45 @@ Module.register("MMM-speech-recognition", {
         //Connect our analyser (run by the context) to our source
         this.source.connect(this.analyser)
         this.analyser.fftSize = 256;
+        // Variable to control audio/capturing flow
+        this.isProcessing = false
+        
 
         //Create a media recorder with our stream (audio from mic)
         this.mediaRecorder = new MediaRecorder(this.audio)
         this.dataArray = new Uint8Array(this.analyser.frequencyBinCount)
         this.checkVolume()
 
+        // This runs AFTER sendAudio is called, to mitigate this, I've added a setTimeout of 500 to sendAudio
         this.mediaRecorder.ondataavailable = (event) => {
             if (event.data.size > 0) {
-              this.audioChunks.push(event.data);
+                this.audioChunks.push(event.data);
         }
     }},
 
     checkVolume() {
+        
+
         this.analyser.getByteFrequencyData(this.dataArray);
         const maxVol = Math.max(...this.dataArray) / 255;
 
-        if (maxVol > this.threshold && this.mediaRecorder.state === 'inactive') {-
+        if (maxVol > this.threshold && this.mediaRecorder.state === 'inactive') {
+            // If there is an audio beign processed already, we dont even check for the possibility of starting recording
+            if (this.isProcessing) return requestAnimationFrame(this.checkVolume.bind(this));
+
+            // Upon audio starting recording, we set isProcessing to true
+            this.isProcessing = true
+            this.updateDom()
             this.mediaRecorder.start()
             console.log('recording')
     
         } else if (maxVol <= this.threshold && this.mediaRecorder.state === 'recording') {
             this.mediaRecorder.stop()
             console.log("Recording stopped");
-            this.sendAudio();
+            console.log(this.isProcessing)
+            setTimeout(() => {
+                this.sendAudio()
+            }, 500)
         }
         requestAnimationFrame(this.checkVolume.bind(this));
     },
@@ -303,6 +318,7 @@ Module.register("MMM-speech-recognition", {
     // },
 
     sendAudio() {
+        console.log('were here')
         if (this.audioChunks.length > 0) {
           const blob = new Blob(this.audioChunks, {type: 'audio/wav'});
           console.log(blob)
@@ -310,6 +326,13 @@ Module.register("MMM-speech-recognition", {
           this.sendSocketNotification("AUDIO_RECORDED", blob)
           //this.ws.emit('micBinaryStream', blob); // Send audio blob to server
           this.audioChunks = []; // Clear chunks after sending
+          console.log('were here 1')
+        } else {
+            // If audio is empty, we may record again, so isProcessign is false again
+            console.log('were here 3')
+            this.isProcessing = false
+            this.updateDom()
+            console.log('nada aqui')
         }
       },
 
@@ -327,7 +350,14 @@ Module.register("MMM-speech-recognition", {
         // Each case should be treated individually in each module
         if (notification.includes('module')) {
             this.sendNotification(notification, payload)
-          }
+            this.isProcessing = false
+        }
+
+        if (notification === 'NOTHING_IN_TRANSCRIPTION') {
+            // If no text is found in transcription, there is nothing to be processed, so isProcessing is false
+            this.isProcessing = false
+            this.updateDom()
+        }
 
         
         if (notification === 'AUDIO_TRANSCRIBED') {
@@ -346,16 +376,27 @@ Module.register("MMM-speech-recognition", {
             const res = await fetch(process.env.API_BASE_URL + '/register', {method: 'POST', body: formData})
             const data = await res.json()
             console.log(data)
+        } else if (notification === 'AUDIO_FINISHED') {
+            console.log('chegou aqui')
+            // Upon audio finishing playing, we may record again
+            this.isProcessing = false
+            console.log(this.isProcessing)
+            this.updateDom()
         }
       },
 
       getDom() {
         const wrapper = document.createElement('div')
-        //wrapper.setAttribute('class', 'loader')
+        if (this.isProcessing) {
+            wrapper.setAttribute('class', 'loader_processing')
+        } else {
+            wrapper.setAttribute('class', 'loader_waiting')
+        }
         return wrapper
       },
 
       getStyles() {
         return ['styles.css']
-      }
+      },
+
 })
