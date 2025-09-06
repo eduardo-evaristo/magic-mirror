@@ -16,9 +16,26 @@ Module.register("MMM-motion-detector-camera", {
   async start() {
     this.waitingText = this.config.waitingText
     this.secondsBetweenChecks = this.config.secondsBetweenChecks
+    this.latestEmotion = null
+    this.faceInFrame = false
 
-    // Getting camera
-    const cam = await navigator.mediaDevices.getUserMedia({ video: true })
+    // Getting the list of video input devices
+    const devices = await navigator.mediaDevices.enumerateDevices()
+    const videoDevices = devices.filter(device => device.kind === "videoinput")
+
+    console.log("Available video devices:", videoDevices)
+
+    if (videoDevices.length > 1) {
+      // Selecting the second webcam (index 1)
+      const cam = await navigator.mediaDevices.getUserMedia({ 
+      video: { deviceId: { exact: videoDevices[1].deviceId } } 
+      })
+      this.cam = cam
+    } else {
+      // If not second webcam, set it to the one available
+      this.cam = await navigator.mediaDevices.getUserMedia({ video: true });
+      throw new Error("Second webcam is unavailable")
+    }
     // If we get our camera instance
     if (cam) {
         this.cam = cam
@@ -43,6 +60,16 @@ Module.register("MMM-motion-detector-camera", {
     this.detectFaces(model)
   },
 
+  async getCurrentEmotion(blob) {
+    const formData = new FormData()
+    formData.append("pic", blob)
+
+    const res = await fetch(baseURL + "/emotion", {
+      method: "POST", body: formData
+    })
+    return res.json()
+  },
+
   async detectFaces(model) {
     setInterval(async () => {
       const a = await model.estimateFaces(this.video, false)
@@ -51,11 +78,20 @@ Module.register("MMM-motion-detector-camera", {
       console.log(topLeftX)
       console.log(topLeftY)
       if (a.length === 1) {
+        // If a face is in frame, we set it to true
+        this.faceInFrame = true
         // Screenshot and send pic
         const blob = await this.takeScreenshot(topLeftX, topLeftY)
         console.log(blob)
         const result = await this.compareWithKnownFaces(blob)
         console.log(result)
+        const emotion = await this.getCurrentEmotion(blob)
+        if (emotion.emotion) this.latestEmotion = emotion.emotion
+        console.log("This is the current emotion")
+        console.log(this.latestEmotion)
+      } else {
+        // If no faces are in frame, or there are more than one face, we set it to false
+        this.faceInFrame = false
       }
       console.log(a)
     }, this.secondsBetweenChecks)

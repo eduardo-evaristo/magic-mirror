@@ -405,15 +405,27 @@ Module.register("MMM-speech-recognition", {
                 console.log(payload.pic.size)
                 const formData = new FormData()
                 formData.append('pic', payload.pic)
-                formData.append('text', payload.text)
+                formData.append(payload.picture ? 'question' : 'text', payload.text)
                 formData.append('weather', JSON.stringify(payload.weather))
                 console.log(formData)
+
+                let data;
+
         
-                const response = await fetch(process.env.API_BASE_URL + '/ai', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
+                if (payload.picture) {
+                    const response = await fetch(process.env.LANGCHAIN_URL + '/picture', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    data = await response.json();
+
+                } else {
+                    const response = await fetch(process.env.API_BASE_URL + '/ai', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    data = await response.json();
+                }
                 console.log(data)
                 // i dont think the module is receving notifs from itself, I'll create functions to get aroudn that
                 //return this.sendNotification('AUDIO_TRANSCRIBED', data) 

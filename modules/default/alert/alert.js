@@ -56,6 +56,11 @@ Module.register("alert", {
 			if (payload.type === "notification") {
 				this.showNotification(payload);
 			} else {
+				if (payload.message.includes("http")) {
+					this.showAlert(payload, sender);
+					return this.sendNotification("AUDIO_FINISHED");
+				}
+
 				//TODO: Maybe refactor this later
 				// Getting audio to be plaeyd along with alert
 				const res = await fetch("http://localhost:5006/voice", {

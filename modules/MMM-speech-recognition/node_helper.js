@@ -76,6 +76,19 @@ module.exports = NodeHelper.create({
             //return this.sendSocketNotification('AUDIO_TRANSCRIBED', aiResponse)
           }
 
+          if (intent === 'handle_to_ai_with_pic') {
+            //Get all needed information before sending it to the API
+            const payload = {text: data.text, picture: true}
+            this.sendSocketNotification('GET_WEATHER_DATA', payload)
+
+            console.log('being handled to AI (with pic)')
+            // We get the AI's response by destructuring
+            //const aiResponse = await this.sendToAi(data.text)
+
+            // Upon receving response, send it to the front end
+            //return this.sendSocketNotification('AUDIO_TRANSCRIBED', aiResponse)
+          }
+
           if (intent.includes('module')) {
             //Getting module's name
             const entity = data.entities

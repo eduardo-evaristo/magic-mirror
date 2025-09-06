@@ -1,20 +1,32 @@
-{% if imageUrl or imageFA %}
-    {% set imageHeight = imageHeight if imageHeight else "80px" %}
-    {% if imageUrl %}
-        <img src="{{ imageUrl }}"
-             height="{{ imageHeight }}"
-             style="margin-bottom: 10px" />
-    {% else %}
-        <span class="bright fas fa-{{ imageFA }}"
-              style="margin-bottom: 10px;
-                     font-size: {{ imageHeight }}"></span>
-    {% endif %}
-    <br />
-{% endif %}
 {% if title %}
-    <span class="thin dimmed medium">{{ title if titleType == 'text' else title | safe }}</span>
+  <span class="thin dimmed medium">
+    {% if titleType == 'text' %}
+      {{ title }}
+    {% else %}
+      {{ title | safe }}
+    {% endif %}
+  </span>
+  {% if message %}<br />{% endif %}
 {% endif %}
+
 {% if message %}
-    {% if title %}<br />{% endif %}
-    <span class="light bright small">{{ message if messageType == 'text' else message | safe }}</span>
+  {% set parts = message.split(" ") %}
+  {% set imageShown = false %}
+
+  {% for part in parts %}
+    {% if not imageShown and part.indexOf("http") === 0 %}
+      <img src="{{ part }}" height="500px" style="margin-bottom: 10px" />
+      {% set imageShown = true %}
+    {% endif %}
+  {% endfor %}
+
+  {% if not imageShown %}
+    <span class="light bright small">
+      {% if messageType == 'text' %}
+        {{ message }}
+      {% else %}
+        {{ message | safe }}
+      {% endif %}
+    </span>
+  {% endif %}
 {% endif %}

@@ -134,7 +134,7 @@ Module.register("weather", {
 		} else if (notification === "GET_WEATHER_DATAA") {
 			console.log("getting weather data");
 			//  There are two weather modules, one for the current weather and one for the weekly forecast, here I inhibit one from processing the code further so we don't get 2 responses from the AI
-			if (this.config.type === "current") return;
+			if (this.config.type === "forecast") return;
 			payload.weather = this.weatherProvider.currentWeather();
 			this.sendNotification("WEATHER_DATA_RECEIVED", payload);
 		}
